@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 from datetime import datetime
 from exif import Image
 from pathlib import Path
@@ -25,6 +26,7 @@ def get_date_taken(filepath):
 
 def organize_files_by_date(source_folder, destination_folder):
     """Organize files in the source folder into year/month folders based on metadata date."""
+    print("Current folder:" + os.getcwd())
     source_folder = Path(source_folder)
     destination_folder = Path(destination_folder)
     log_file = destination_folder / "no_metadata_log.txt"
@@ -64,7 +66,7 @@ if __name__ == "__main__":
     Requirements:
     - Ensure the required libraries (exif, moviepy) are installed.
     """
-    import sys
+    
     if len(sys.argv) != 3:
         print("Usage: python script.py <source_folder> <destination_folder>")
         sys.exit(1)
