@@ -33,7 +33,7 @@ def get_date_taken(filepath):
     return None
 
 
-def organize_files_by_date(source_folder, destination_folder):
+def organize_files_by_date(source_folder, destination_folder, move_files):
     """Organize files in the source folder into year/month folders based on metadata date."""
     source_folder = Path(source_folder)
     destination_folder = Path(destination_folder)
@@ -51,8 +51,12 @@ def organize_files_by_date(source_folder, destination_folder):
                     month_folder.mkdir(parents=True, exist_ok=True)
 
                     destination_path = month_folder / file
-                    print(f"Copying {filepath} to {destination_path}")
-                    shutil.copy2(str(filepath), destination_path)
+                    if move_files:
+                        print(f"Moving {filepath} to {destination_path}")
+                        shutil.move(str(filepath), destination_path)
+                    else:
+                        print(f"Copying {filepath} to {destination_path}")
+                        shutil.copy2(str(filepath), destination_path)
                 else:
                     print(f"No metadata found for {filepath}. Logging.")
                     log.write(f"{filepath}\n")
@@ -65,23 +69,25 @@ if __name__ == "__main__":
     Usage:
     - Provide the source folder as the first argument.
     - Provide the destination folder as the second argument.
+    - Optionally, use the "--move" flag as the third argument to move files instead of copying.
 
     The script:
     1. Reads the metadata of each file to determine the 'date taken'.
-    2. Copies the file into a folder structure organized by year and month.
+    2. Copies or moves the file into a folder structure organized by year and month.
     3. Logs files without metadata into 'no_metadata_log.txt' in the destination folder.
     
     Requirements:
     - Ensure the required libraries (exif, moviepy, pyheif, pillow) are installed.
     """
     import sys
-    if len(sys.argv) != 3:
-        print("Usage: python script.py <source_folder> <destination_folder>")
+    if len(sys.argv) < 3 or len(sys.argv) > 4:
+        print("Usage: python script.py <source_folder> <destination_folder> [--move]")
         sys.exit(1)
 
     source = sys.argv[1]
     destination = sys.argv[2]
+    move_files = len(sys.argv) == 4 and sys.argv[3] == "--move"
 
-    organize_files_by_date(source, destination)
+    organize_files_by_date(source, destination, move_files)
 
     print("Organizing complete! Check 'no_metadata_log.txt' in the destination folder for files without metadata.")
