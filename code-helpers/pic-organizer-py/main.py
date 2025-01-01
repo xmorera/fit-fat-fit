@@ -1,20 +1,29 @@
 import os
 import shutil
-import sys
 from datetime import datetime
 from exif import Image
 from pathlib import Path
 from moviepy.editor import VideoFileClip
-
+import pyheif
+from PIL import Image as PILImage
 
 def get_date_taken(filepath):
     """Extract the date the image or video was taken."""
     try:
-        if filepath.suffix.lower() in ['.jpg', '.jpeg', '.png', '.heic']:
+        if filepath.suffix.lower() in ['.jpg', '.jpeg', '.png']:
             with open(filepath, 'rb') as img_file:
                 img = Image(img_file)
                 if img.has_exif and hasattr(img, 'datetime_original'):
                     return datetime.strptime(img.datetime_original, '%Y:%m:%d %H:%M:%S')
+        elif filepath.suffix.lower() == '.heic':
+            heif_file = pyheif.read(filepath)
+            for metadata in heif_file.metadata or []:
+                if metadata['type'] == 'Exif':
+                    exif_data = PILImage.open(filepath)._getexif()
+                    if exif_data:
+                        date_taken = exif_data.get(36867)  # Tag for DateTimeOriginal
+                        if date_taken:
+                            return datetime.strptime(date_taken, '%Y:%m:%d %H:%M:%S')
         elif filepath.suffix.lower() in ['.mp4', '.mov', '.avi', '.mkv']:
             clip = VideoFileClip(str(filepath))
             if clip.creation_date:
@@ -26,7 +35,6 @@ def get_date_taken(filepath):
 
 def organize_files_by_date(source_folder, destination_folder):
     """Organize files in the source folder into year/month folders based on metadata date."""
-    print("Current folder:" + os.getcwd())
     source_folder = Path(source_folder)
     destination_folder = Path(destination_folder)
     log_file = destination_folder / "no_metadata_log.txt"
@@ -64,9 +72,9 @@ if __name__ == "__main__":
     3. Logs files without metadata into 'no_metadata_log.txt' in the destination folder.
     
     Requirements:
-    - Ensure the required libraries (exif, moviepy) are installed.
+    - Ensure the required libraries (exif, moviepy, pyheif, pillow) are installed.
     """
-    
+    import sys
     if len(sys.argv) != 3:
         print("Usage: python script.py <source_folder> <destination_folder>")
         sys.exit(1)
