@@ -2,6 +2,10 @@
     // Use IntelliSense to learn about possible attributes.
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    // Irene folder source: C:\\Data\\OneDrive\\Pictures\\Irene
+    // Irene folder destination: C:\\Data\\OneDrive\\Irenita Pixs
+    // "./source",
+    // "./output",
     "version": "0.2.0",
     "configurations": [
 
@@ -13,7 +17,8 @@
             "console": "integratedTerminal",
             "args": [
                  "C:\\Data\\OneDrive\\Pictures\\Irene",
-                "./output"
+                "C:\\Data\\OneDrive\\Irenita Pixs",
+                "--move"
             ]
         }
     ]

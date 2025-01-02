@@ -4,30 +4,32 @@ from datetime import datetime
 from exif import Image
 from pathlib import Path
 from moviepy.editor import VideoFileClip
-import pyheif
 from PIL import Image as PILImage
+import pillow_heif
+import piexif
 
 def get_date_taken(filepath):
     """Extract the date the image or video was taken."""
     try:
         if filepath.suffix.lower() in ['.jpg', '.jpeg', '.png']:
-            with open(filepath, 'rb') as img_file:
-                img = Image(img_file)
-                if img.has_exif and hasattr(img, 'datetime_original'):
-                    return datetime.strptime(img.datetime_original, '%Y:%m:%d %H:%M:%S')
+            pass
+            # with open(filepath, 'rb') as img_file:
+            #     img = Image(img_file)
+            #     if img.has_exif and hasattr(img, 'datetime_original'):
+            #         return datetime.strptime(img.datetime_original, '%Y:%m:%d %H:%M:%S')
         elif filepath.suffix.lower() == '.heic':
-            heif_file = pyheif.read(filepath)
-            for metadata in heif_file.metadata or []:
-                if metadata['type'] == 'Exif':
-                    exif_data = PILImage.open(filepath)._getexif()
-                    if exif_data:
-                        date_taken = exif_data.get(36867)  # Tag for DateTimeOriginal
-                        if date_taken:
-                            return datetime.strptime(date_taken, '%Y:%m:%d %H:%M:%S')
+            heif_image = pillow_heif.open_heif(filepath)
+            exif_bytes = heif_image.info.get('exif', None)
+            if exif_bytes:
+                exif_data = piexif.load(exif_bytes)
+                date_taken = exif_data['Exif'].get(piexif.ExifIFD.DateTimeOriginal)
+                if date_taken:
+                    return datetime.strptime(date_taken.decode('utf-8'), '%Y:%m:%d %H:%M:%S')
         elif filepath.suffix.lower() in ['.mp4', '.mov', '.avi', '.mkv']:
-            clip = VideoFileClip(str(filepath))
-            if clip.creation_date:
-                return datetime.strptime(clip.creation_date, '%Y-%m-%dT%H:%M:%S')
+            pass
+            # clip = VideoFileClip(str(filepath))
+            # if clip.creation_date:
+            #     return datetime.strptime(clip.creation_date, '%Y-%m-%dT%H:%M:%S')
     except Exception as e:
         print(f"Error processing {filepath}: {e}")
     return None
@@ -77,7 +79,7 @@ if __name__ == "__main__":
     3. Logs files without metadata into 'no_metadata_log.txt' in the destination folder.
     
     Requirements:
-    - Ensure the required libraries (exif, moviepy, pyheif, pillow) are installed.
+    - Ensure the required libraries (exif, moviepy, pillow, pillow-heif, piexif) are installed.
     """
     import sys
     if len(sys.argv) < 3 or len(sys.argv) > 4:
