@@ -40,8 +40,9 @@ def organize_files_by_date(source_folder, destination_folder, move_files):
     source_folder = Path(source_folder)
     destination_folder = Path(destination_folder)
     log_file = destination_folder / "no_metadata_log.txt"
+    duplicate_log_file = destination_folder / "duplicate_files_log.txt"
 
-    with log_file.open('w') as log:
+    with log_file.open('w') as log, duplicate_log_file.open('w') as duplicate_log:
         for root, _, files in os.walk(source_folder):
             for file in files:
                 filepath = Path(root) / file
@@ -53,9 +54,21 @@ def organize_files_by_date(source_folder, destination_folder, move_files):
                     month_folder.mkdir(parents=True, exist_ok=True)
 
                     destination_path = month_folder / file
+                    if destination_path.exists():
+                        print(f"File already exists: {destination_path}. Logging.")
+                        duplicate_log.write(f"{destination_path}\n")
+                        continue
+
                     if move_files:
                         print(f"Moving {filepath} to {destination_path}")
                         shutil.move(str(filepath), destination_path)
+
+                        # Check for corresponding .AAE file and move it
+                        aae_file = filepath.with_suffix('.AAE')
+                        if aae_file.exists():
+                            aae_destination = month_folder / aae_file.name
+                            print(f"Moving associated AAE file {aae_file} to {aae_destination}")
+                            shutil.move(str(aae_file), aae_destination)
                     else:
                         print(f"Copying {filepath} to {destination_path}")
                         shutil.copy2(str(filepath), destination_path)
@@ -77,6 +90,8 @@ if __name__ == "__main__":
     1. Reads the metadata of each file to determine the 'date taken'.
     2. Copies or moves the file into a folder structure organized by year and month.
     3. Logs files without metadata into 'no_metadata_log.txt' in the destination folder.
+    4. Logs duplicate files into 'duplicate_files_log.txt' in the destination folder.
+    5. Moves associated .AAE files if the original file is moved.
     
     Requirements:
     - Ensure the required libraries (exif, moviepy, pillow, pillow-heif, piexif) are installed.
@@ -92,4 +107,4 @@ if __name__ == "__main__":
 
     organize_files_by_date(source, destination, move_files)
 
-    print("Organizing complete! Check 'no_metadata_log.txt' in the destination folder for files without metadata.")
+    print("Organizing complete! Check 'no_metadata_log.txt' for files without metadata and 'duplicate_files_log.txt' for duplicate files in the destination folder.")
