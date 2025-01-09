@@ -42,6 +42,9 @@ def get_mov_creation_date(file_path):
             print("Creation date not found in metadata.")
     except Exception as e:
         print(f"Error reading file metadata: {e}")
+    finally:
+        if parser:
+            parser.close()
     return None
 
 def get_mp4_creation_date(file_path):
@@ -74,6 +77,9 @@ def get_mp4_creation_date(file_path):
             print("Creation date not found in metadata.")
     except Exception as e:
         print(f"Error reading file metadata: {e}")
+    finally:
+        if parser:
+            parser.close()
     return None
 
 def get_video_creation_date(filepath):
