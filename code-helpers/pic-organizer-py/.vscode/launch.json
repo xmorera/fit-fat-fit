@@ -16,8 +16,8 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                 "C:\\Data\\OneDrive\\Pictures\\Irene",
-                "C:\\Data\\OneDrive\\Irenita Pixs",
+                 "C:\\Xavier Backup Pixs",
+                "C:\\Xavier Sorted",
                 "--move"
             ]
         }
