@@ -1,23 +1,113 @@
 import os
 import shutil
+from hachoir.parser import createParser
+from hachoir.metadata import extractMetadata
 from datetime import datetime
 from exif import Image
 from pathlib import Path
-from moviepy.editor import VideoFileClip
 from PIL import Image as PILImage
 import pillow_heif
 import piexif
+import subprocess
+import json
+
+
+def get_mov_creation_date(file_path):
+    """
+    Extract the creation date from a .mov file's metadata.
+
+    Args:
+        file_path (str): Path to the .mov file.
+
+    Returns:
+        datetime: The creation date of the file as a datetime object, or None if not found.
+    """
+    try:
+        parser = createParser(str(file_path))
+        if not parser:
+            print(f"Unable to parse the file: {file_path}")
+            return None
+
+        metadata = extractMetadata(parser)
+        if not metadata:
+            print(f"No metadata found for the file: {file_path}")
+            return None
+
+        # Extract creation date
+        creation_date = metadata.get("creation_date")
+        if creation_date:
+            # Convert to datetime object
+            return datetime.strptime(str(creation_date), '%Y-%m-%d %H:%M:%S')
+        else:
+            print("Creation date not found in metadata.")
+    except Exception as e:
+        print(f"Error reading file metadata: {e}")
+    return None
+
+def get_mp4_creation_date(file_path):
+    """
+    Extract the creation date from a .mp4 file's metadata.
+
+    Args:
+        file_path (str): Path to the .mp4 file.
+
+    Returns:
+        datetime: The creation date of the file as a datetime object, or None if not found.
+    """
+    try:
+        parser = createParser(str(file_path))
+        if not parser:
+            print(f"Unable to parse the file: {file_path}")
+            return None
+
+        metadata = extractMetadata(parser)
+        if not metadata:
+            print(f"No metadata found for the file: {file_path}")
+            return None
+
+        # Extract creation date
+        creation_date = metadata.get("creation_date")
+        if creation_date:
+            # Convert to datetime object
+            return datetime.strptime(str(creation_date), '%Y-%m-%d %H:%M:%S')
+        else:
+            print("Creation date not found in metadata.")
+    except Exception as e:
+        print(f"Error reading file metadata: {e}")
+    return None
+
+def get_video_creation_date(filepath):
+    """
+    Determine the video type (MOV or MP4) and extract its creation date.
+
+    Args:
+        filepath (str): Path to the video file.
+
+    Returns:
+        datetime: The creation date of the file as a datetime object, or None if not found.
+    """
+    filepath = str(filepath)  # Ensure filepath is a string
+    if filepath.lower().endswith('.mov'):
+        return get_mov_creation_date(filepath)
+    elif filepath.lower().endswith('.mp4'):
+        return get_mp4_creation_date(filepath)
+    else:
+        print(f"Unsupported file type: {filepath}")
+        return None
+
+ 
 
 def get_date_taken(filepath):
     """Extract the date the image or video was taken."""
     try:
         if filepath.suffix.lower() in ['.jpg', '.jpeg', '.png']:
-            pass
-            # with open(filepath, 'rb') as img_file:
-            #     img = Image(img_file)
-            #     if img.has_exif and hasattr(img, 'datetime_original'):
-            #         return datetime.strptime(img.datetime_original, '%Y:%m:%d %H:%M:%S')
+            # pass
+            with open(filepath, 'rb') as img_file:
+                img = Image(img_file)
+                if img.has_exif and hasattr(img, 'datetime_original'):
+                    return datetime.strptime(img.datetime_original, '%Y:%m:%d %H:%M:%S')
         elif filepath.suffix.lower() == '.heic':
+            # pass
             heif_image = pillow_heif.open_heif(filepath)
             exif_bytes = heif_image.info.get('exif', None)
             if exif_bytes:
@@ -26,10 +116,7 @@ def get_date_taken(filepath):
                 if date_taken:
                     return datetime.strptime(date_taken.decode('utf-8'), '%Y:%m:%d %H:%M:%S')
         elif filepath.suffix.lower() in ['.mp4', '.mov', '.avi', '.mkv']:
-            pass
-            # clip = VideoFileClip(str(filepath))
-            # if clip.creation_date:
-            #     return datetime.strptime(clip.creation_date, '%Y-%m-%dT%H:%M:%S')
+            return get_video_creation_date(filepath)
     except Exception as e:
         print(f"Error processing {filepath}: {e}")
     return None
@@ -60,8 +147,11 @@ def organize_files_by_date(source_folder, destination_folder, move_files):
                         continue
 
                     if move_files:
-                        print(f"Moving {filepath} to {destination_path}")
-                        shutil.move(str(filepath), destination_path)
+                        try:
+                            shutil.move(str(filepath), str(destination_path))
+                            print(f"Moved {filepath} to {destination_path}")
+                        except Exception as e:
+                            print(f"Error moving {filepath} to {destination_path}: {e}")
 
                         # Check for corresponding .AAE file and move it
                         aae_file = filepath.with_suffix('.AAE')
@@ -70,8 +160,8 @@ def organize_files_by_date(source_folder, destination_folder, move_files):
                             print(f"Moving associated AAE file {aae_file} to {aae_destination}")
                             shutil.move(str(aae_file), aae_destination)
                     else:
-                        print(f"Copying {filepath} to {destination_path}")
                         shutil.copy2(str(filepath), destination_path)
+                        print(f"Copied {filepath} to {destination_path}")
                 else:
                     print(f"No metadata found for {filepath}. Logging.")
                     log.write(f"{filepath}\n")
@@ -95,6 +185,7 @@ if __name__ == "__main__":
     
     Requirements:
     - Ensure the required libraries (exif, moviepy, pillow, pillow-heif, piexif) are installed.
+    - Ensure ffprobe is available on your system.
     """
     import sys
     if len(sys.argv) < 3 or len(sys.argv) > 4:
